@@ -286,11 +286,14 @@ int read_matrix_file(char* file_name, int* n, double*** m)
             fscanf(fp, "%lf", &fl);
             *m[i][j] = fl;
 
-            if (feof(fp))
+            if (feof(fp)) {
+                fclose(fp);
                 return 0;
+            }
         }
     }
 
+    fclose(fp);
     return 1;
 }
 
