@@ -106,6 +106,18 @@ void print_solution(double *v, int n)
 }
 
 /**
+ * Libera uma matriz M de L linhas
+ */
+void delete_matrix(double** m, int l)
+{
+    int j;
+    for (j = 0; j < l; j++)
+        free(m[j]);
+
+    free(m);
+}
+
+/**
  * Aloca uma matriz de L linhas por C colunas
  */
 double **alloc_matrix(int l, int c)
@@ -125,18 +137,6 @@ double **alloc_matrix(int l, int c)
     }
 
     return m;
-}
-
-/**
- * Libera uma matriz M de L linhas
- */
-void delete_matrix(double** m, int l)
-{
-    int j;
-    for (j = 0; j < l; j++)
-        free(m[j]);
-
-    free(m);
 }
 
 /**
@@ -279,10 +279,10 @@ int read_matrix_file(char* file_name, int* n, double*** m)
 
     fscanf(fp, "%d", &num);
     *n = num;
-    *m = alloc_matrix(n, n + 1);
+    *m = alloc_matrix(*n, *n + 1);
 
-    for (i = 0; i < n; i++) {
-        for (j = 0; j < n + 1; j++) {
+    for (i = 0; i < *n; i++) {
+        for (j = 0; j < *n + 1; j++) {
             fscanf(fp, "%lf", &fl);
             *m[i][j] = fl;
 
@@ -306,6 +306,8 @@ void linear_system_action()
     printf("\nInforme o nome de um arquivo para leitura: ");
     scanf("%s", file_name);
     if (read_matrix_file(file_name, &n, &m)) {
+        printf("\nN = %d", n);
+        print_matrix(m, n, n + 1);
         //TODO: Aplicar metodo de JORDAN (usar funcao sl_jordan)
         //TODO: Exibir matriz diagonal (usar funcao print_matrix)
         //TODO: Exibir solução do problema (usar funcao print_solution)
