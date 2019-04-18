@@ -13,7 +13,7 @@
 #define SPACE_CHAR 32
 #define SEPARATOR_CHAR '.'
 #define MAX_INT_DIGITS 20
-#define MAX_FLOAT_DIGITS 20
+#define MAX_FRAC_DIGITS 20
 
 #define HEXA 16
 #define OCTAL 8
@@ -47,7 +47,7 @@ void format_number(double num, int base, char *output)
     int in = (int)num;
     double fl = num - in;
     int k;
-    int size = MAX_INT_DIGITS + MAX_FLOAT_DIGITS + 2;
+    int size = MAX_INT_DIGITS + MAX_FRAC_DIGITS + 2;
 
     output[size - 1] = 0;
 
@@ -111,22 +111,32 @@ void print_solution(double *v, int n)
 double **alloc_matrix(int l, int c)
 {
     double **m;
-    int i, j;
+    int i;
     m = malloc(sizeof(m) * l);
 
     if (m != NULL) {
         for (i = 0; i < l; i++) {
             m[i] = malloc(sizeof(double) * c);
             if (m[i] == NULL) {
-                for (j = 0; j < i; j++) { free(m[j]); }
-
-                free(m);
+                delete_matrix(m, l);
                 return NULL;
             }
         }
     }
 
     return m;
+}
+
+/**
+ * Libera uma matriz M de L linhas
+ */
+void delete_matrix(double** m, int l)
+{
+    int j;
+    for (j = 0; j < l; j++)
+        free(m[j]);
+
+    free(m);
 }
 
 /**
@@ -192,22 +202,31 @@ void sl_gauss(double **m, int n)
 }
 
 /**
+ * Limpa a saída do console
+ */
+void clear_console()
+{
+    fflush(stdout);
+    printf("\033c");
+}
+
+/**
  * Imprime o menu
  */
 void print_menu()
 {
     int i;
 
-    fflush(stdout);
-    printf("\n");
-    for (i=0; i<40; i++) printf("-");
+    clear_console();
+
+    printf("\n"); for (i=0; i<40; i++) printf("-");
     printf("\nCALCULO NUMERICO");
-    for (i=0; i<40; i++) printf("-");
+    printf("\n"); for (i=0; i<40; i++) printf("-");
     printf("\nC - Conversão");
     printf("\nS - Sistema Linear");
     printf("\nE - Equação Algébrica");
     printf("\nF - Finalizar");
-    for (i=0; i<40; i++) printf("-");
+    printf("\n"); for (i=0; i<40; i++) printf("-");
 }
 
 /**
@@ -215,10 +234,13 @@ void print_menu()
  */
 char read_menu_option() 
 {
+    char option;
+
     print_menu();
     printf("\n Escolha uma opção: ");
+    scanf("%c", &option);
 
-    return toupper(getchar());
+    return toupper(option);
 }
 
 /**
@@ -226,7 +248,44 @@ char read_menu_option()
  */
 void convert_action()
 {
-    //TODO
+    double number;
+    char output[MAX_INT_DIGITS + MAX_FRAC_DIGITS + 2];
+
+    clear_console();
+    printf("\nInforme um número decimal: ");
+    scanf("%lf", &number);
+
+    format_number(number, BINARIO, output);
+    printf("\nBINARIO: %s", output);
+
+    format_number(number, OCTAL, output);
+    printf("\nOCTAL:   %s", output);
+
+    format_number(number, HEXA, output);
+    printf("\nHEXA:    %s", output);
+}
+
+int read_matrix_file(char* file_name, int* n, double*** m)
+{
+    FILE *fp = fopen(file_name, "r");
+    int num, i, j;
+    double fl;
+
+    fscanf(fp, "%d", &num);
+    *n = num;
+    *m = alloc_matrix(n, n + 1);
+
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < n + 1; j++) {
+            fscanf(fp, "%lf", &fl);
+            *m[i][j] = fl;
+
+            if (feof(fp))
+                return 0;
+        }
+    }
+
+    return 1;
 }
 
 /**
@@ -234,7 +293,19 @@ void convert_action()
  */
 void linear_system_action()
 {
-    //TODO
+    char file_name[255];
+    double** m;
+    int n;
+
+    printf("\nInforme o nome de um arquivo para leitura: ");
+    scanf("%s", file_name);
+    if (read_matrix_file(file_name, &n, &m)) {
+        //TODO: Aplicar metodo de JORDAN (usar funcao sl_jordan)
+        //TODO: Exibir matriz diagonal (usar funcao print_matrix)
+        //TODO: Exibir solução do problema (usar funcao print_solution)
+    }
+
+    delete_matrix(m, n);
 }
 
 /**
@@ -256,10 +327,11 @@ int main()
         else if (opt == LINEAR_SYSTEM_OPT)
             linear_system_action();
         else {
-            printf("\n Opção inválida");
+            printf("\n OPCAO INVÁLIDA");
         }
         
-        printf("Precione qualquer tecla para voltar para o menu...");
+        printf("\n\nPrecione ENTER para voltar para o menu...\n");
+        while ((opt = getchar()) != '\n' && opt != EOF);
         getchar();
     }
 
