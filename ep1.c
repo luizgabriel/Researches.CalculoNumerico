@@ -265,6 +265,12 @@ void convert_action()
     printf("\nHEXA:    %s", output);
 }
 
+/**
+ * Lê um arquivo dado, popula a matriz M de N variaveis
+ * Retorno:
+ *  0 - Não foi possível ler o arquivo
+ *  1 - Sucesso!
+ */
 int read_matrix_file(char* file_name, int* n, double*** m)
 {
     FILE *fp = fopen(file_name, "r");
