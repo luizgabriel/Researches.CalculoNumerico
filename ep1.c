@@ -246,7 +246,7 @@ char read_menu_option()
 /**
  * Ação de CONVERTER números para as bases HEXA, OCTAL e BINARIO 
  */
-void convert_action()
+void convert_option()
 {
     double number;
     char output[MAX_INT_DIGITS + MAX_FRAC_DIGITS + 2];
@@ -271,58 +271,75 @@ void convert_action()
  *  0 - Não foi possível ler o arquivo
  *  1 - Sucesso!
  */
-int read_matrix_file(char* file_name, int* n, double*** m)
+int read_matrix_file(char* file_name, int* size, double*** m)
 {
-    FILE *fp = fopen(file_name, "r");
-    int num, i, j;
+    FILE *fp;
+    int n, j, k;
     double fl;
 
-    fscanf(fp, "%d", &num);
-    *n = num;
-    *m = alloc_matrix(*n, *n + 1);
+    fp = fopen(file_name, "r");
+    if (fp) {
+        fscanf(fp, "%d", &n);
 
-    for (i = 0; i < *n; i++) {
-        for (j = 0; j < *n + 1; j++) {
-            fscanf(fp, "%lf", &fl);
-            *m[i][j] = fl;
+        *size = n;
+        *m = alloc_matrix(n, n + 1);
 
-            if (feof(fp)) {
-                fclose(fp);
-                return 0;
+        for (j = 0; j < n; j++) {
+            for (k = 0; k < n + 1; k++) {
+                //Se a matriz tiver incompleta
+                if (feof(fp)) {
+                    fclose(fp);
+                    delete_matrix(*m, n);
+                    *m = NULL;
+                    *size = 0;
+
+                    return -3;
+                }
+
+                fscanf(fp, "%lf", &fl);
+                (*m)[j][k] = fl;
             }
         }
-    }
 
-    fclose(fp);
-    return 1;
+        fclose(fp);
+        return 1;
+    } else {
+        return -1;
+    }
 }
 
 /**
  * Ação de ler um arquivo dado o nome resolver a matriz usando metodo de jordan e exibir a matriz diagonal
  */
-void linear_system_action()
+void linear_system_option()
 {
     char file_name[255];
     double** m;
-    int n;
+    int n, file_status;
 
     printf("\nInforme o nome de um arquivo para leitura: ");
     scanf("%s", file_name);
-    if (read_matrix_file(file_name, &n, &m)) {
-        printf("\nN = %d", n);
+
+    file_status = read_matrix_file(file_name, &n, &m);
+    if (file_status == -1) {
+        printf("\n Arquivo não encontrado (%s)", file_name);
+    } else if (file_status == -3) {
+        printf("\n Arquivo formatado incorretamente. Forneça todos os dados. (%s)", file_name);
+    } else {
+        printf("\nN = %d\n", n);
         print_matrix(m, n, n + 1);
         //TODO: Aplicar metodo de JORDAN (usar funcao sl_jordan)
         //TODO: Exibir matriz diagonal (usar funcao print_matrix)
         //TODO: Exibir solução do problema (usar funcao print_solution)
-    }
 
-    delete_matrix(m, n);
+        delete_matrix(m, n);
+    }
 }
 
 /**
  * Ler equaçao algebrica e aplicar teoremas de lagrange, bolzano e bissessão
  */
-void equation_action()
+void equation_option()
 {
     //TODO
 }
@@ -332,11 +349,11 @@ int main()
     char opt;
     while (opt = read_menu_option(), opt != FINISH_OPT) {
         if (opt == CONVERT_OPT)
-            convert_action();
+            convert_option();
         else if (opt == EQUATION_OPT)
-            equation_action();
+            equation_option();
         else if (opt == LINEAR_SYSTEM_OPT)
-            linear_system_action();
+            linear_system_option();
         else {
             printf("\n OPCAO INVÁLIDA");
         }
