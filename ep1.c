@@ -8,7 +8,6 @@
 #define SL_RESULT_INCOMPATIBLE 2
 #define SL_RESULT_UNDEFINED 1
 #define SL_RESULT_DEFINED 0
-#define SL_EPSILON 0.000001
 
 #define SPACE_CHAR 32
 #define SEPARATOR_CHAR '.'
@@ -23,6 +22,9 @@
 #define LINEAR_SYSTEM_OPT 'S'
 #define EQUATION_OPT 'E'
 #define FINISH_OPT 'F'
+
+#define MAX_BISSECTION_ERROR 0.00000001
+#define MAX_BISSECTION_ITERATIONS 1000
 
 /**
  * Converte número para caractere especifico da base
@@ -389,7 +391,7 @@ void linear_system_option()
 }
 
 /**
- * Aplica teorema de lagrange
+ * Teorema de lagrange
  * Entrada>>
  * - e : Equação [a, b, c, ..., z] <=> a*x^n + b*x^(n-1) * ... * z*x^0
  * - n : Grau da equação
@@ -425,6 +427,9 @@ double lagrange(double *e, int n)
     return 1 + pow(b / an, 1.0 / (n - k));
 }
 
+/**
+ * Aplica o Teorema de Lagrange
+ */
 void equation_lagrange_option(double *e, int n)
 {
     int i;
@@ -457,6 +462,113 @@ void equation_lagrange_option(double *e, int n)
     printf("\nIntervalo das raízes:");
     printf("\n %lf < x+ < %lf", l1, l);
     printf("\n %lf < x- < %lf", l2, l3);
+}
+
+/**
+ * Aplica o método de Briot Ruffini para calcular aproximação de p(x)
+ */
+double solve_equation(double *p, int n, double x)
+{
+    int i;
+    double aux[n];
+
+    aux[0] = p[0];
+    for (i = 0; i < n - 1; i++) {
+        aux[i + 1] = aux[i]*x + p[i + 1];
+    }
+
+    return aux[n - 1];
+}
+
+/**
+ * Método da Bisseção
+ * Entrada>>
+ * - a, b : um intervaldo (a, b)
+ * - p : uma equação polinomial
+ * - n : o grau da equação polinomal
+ * Saida>>
+ * Uma raiz aproximada de p(x)
+ */
+double bissection(double a, double b, double *p, int n)
+{
+    int i;
+    double m, err, fa, fb, fm;
+
+    i = 0;
+    printf("\n\t\tA\t\tB\t\tM\t\tERROR");
+
+    while (i < MAX_BISSECTION_ITERATIONS) {
+        m = (a + b) / 2.0;
+        err = (b - a) / 2.0;
+        fa = solve_equation(p, n, a);
+        fb = solve_equation(p, n, b);
+        fm = solve_equation(p, n, m);
+        printf("\n\t%lf\t%lf\t%lf\t%lf", a, b, m, err);
+
+        if (fm == 0 || err <= MAX_BISSECTION_ERROR) {
+            return m;
+        }
+
+        if (fa * fm < 0) {
+            b = m;
+        } else if (fb * fm < 0) {
+            a = m;
+        } else {
+            return m;
+        }
+
+        i++;
+    }
+
+    return m;
+}
+
+/**
+ * Aplica o Teorema de Bisseção 
+ */
+void equation_bissection_option(double *e, int n)
+{
+    double a, b, x; 
+
+    printf("\nInforme um intervaldo (a, b): ");
+    printf("\n a: ");
+    scanf("%lf", &a);
+
+    printf("\n b: ");
+    scanf("%lf", &b);
+
+    if ((solve_equation(e, n, a) * solve_equation(e, n, b)) > 0) {
+        printf("\n O intervaldo informado não possui uma quantidade ímpar de raízes.");
+    } else {
+        x = bissection(a, b, e, n);
+        printf("\n Uma raiz aproximada do polinômio no intervaldo: %lf", x);
+    }
+}
+
+/**
+ * Imprime um polinômio
+ */
+void print_poli(double *v, int n)
+{
+    int i;
+    char sign;
+
+    for (i = 0; i <= n; i++) {
+        if (v[i] < 0 || i > 0) {
+            sign = v[i] > 0 ? '+' : '-';
+            printf(" %c ", sign);
+        }
+
+        if (i == 0) {
+            printf("\n%10.3lfx^%d", fabs(v[0]), n - i);
+        } else if (i == n - 1) {
+            printf("%10.3lfx", fabs(v[i]));
+        } else if (i == n) {
+            printf("%10.3lf", fabs(v[i]));
+        } else {
+            printf("%10.3lfx^%d", fabs(v[i]), n - i);
+        }
+    }
 }
 
 /**
@@ -494,7 +606,10 @@ void equation_option()
         } while (f == 0);
     }
 
+    print_poli(e, n);
+
     equation_lagrange_option(e, n);
+    equation_bissection_option(e, n);
 
     free(e);
 }
