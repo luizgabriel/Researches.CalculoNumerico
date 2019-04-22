@@ -491,23 +491,15 @@ double solve_equation(double *p, int n, double x)
  */
 double bissection(double a, double b, double *p, int n)
 {
-    int i;
     double m, err, fa, fb, fm;
+    int i = 0;
 
-    i = 0;
-    printf("\n\t\tA\t\tB\t\tM\t\tERROR");
-
-    while (i < MAX_BISSECTION_ITERATIONS) {
+    while (i < MAX_BISSECTION_ITERATIONS && err <= MAX_BISSECTION_ERROR) {
         m = (a + b) / 2.0;
         err = (b - a) / 2.0;
         fa = solve_equation(p, n, a);
         fb = solve_equation(p, n, b);
         fm = solve_equation(p, n, m);
-        printf("\n\t%lf\t%lf\t%lf\t%lf", a, b, m, err);
-
-        if (fm == 0 || err <= MAX_BISSECTION_ERROR) {
-            return m;
-        }
 
         if (fa * fm < 0) {
             b = m;
