@@ -101,7 +101,7 @@ void print_solution(double *v, int n)
     int i;
 
     for (i = 0; i < n; i++) {
-        printf("x[%d] = %10.3lf ", i + 1, v[i]);
+        printf("\nx[%d] = %10.3lf ", i + 1, v[i]);
     }
 }
 
@@ -202,6 +202,57 @@ void sl_gauss(double **m, int n)
 }
 
 /**
+ * Aplica o Método de Jordan para encontrar uma Matriz Diagonal (Triangular Superior e Inferior)
+ */
+void sl_jordan(double **m, int n)
+{
+    char i, j, k, t;
+    double mult, aux;
+
+    for(i = 0; i < n; i++) {
+
+        if(m[i][i] == 0) {
+            t = 1;
+            while(m[i][i + t] == 0 && (i + t) < n) t++;
+
+            if ((i + t) == n) {
+
+                for(j = 0; j < n; j++) {
+                    m[j][i] = 0;
+                }
+
+            } else {
+
+                for(j = i, k = 0; k < n; k++) {
+                    aux = m[i][k];
+                    m[j][k] = m[j][k + t];
+                    m[j][k + t] = aux;
+                }
+
+            }
+        }
+
+        for (j = 0; j < n; j++) {
+
+            if(j != i) {
+
+                if(m[i][i] == 0) {
+                    mult = 0;
+                } else {
+                    mult = -(m[j][i] / m[i][i]);
+                }
+
+                for(k = 0; k <= n; k++) {
+                    m[j][k] = m[j][k] + (mult * m[i][k]);
+                }
+
+            }
+
+        }
+    }
+}
+
+/**
  * Limpa a saída do console
  */
 void clear_console()
@@ -286,7 +337,7 @@ int read_matrix_file(char* file_name, int* size, double*** m)
 
         for (j = 0; j < n; j++) {
             for (k = 0; k < n + 1; k++) {
-                //Se a matriz tiver incompleta
+                //Se a matriz estiver incompleta
                 if (feof(fp)) {
                     fclose(fp);
                     delete_matrix(*m, n);
@@ -314,8 +365,8 @@ int read_matrix_file(char* file_name, int* size, double*** m)
 void linear_system_option()
 {
     char file_name[255];
-    double** m;
-    int n, file_status;
+    double **m, *x;
+    int n, file_status, result;
 
     printf("\nInforme o nome de um arquivo para leitura: ");
     scanf("%s", file_name);
@@ -323,16 +374,33 @@ void linear_system_option()
     file_status = read_matrix_file(file_name, &n, &m);
     if (file_status == -1) {
         printf("\n Arquivo não encontrado (%s)", file_name);
-    } else if (file_status == -3) {
-        printf("\n Arquivo formatado incorretamente. Forneça todos os dados. (%s)", file_name);
+    } else if (file_status == -3 || n == 0 || m == NULL) {
+        printf("\n Arquivo formatado incorretamente. Forneça todos os dados corretamente. (%s)", file_name);
     } else {
+        x = alloc_vector(n);
+
         printf("\nN = %d\n", n);
         print_matrix(m, n, n + 1);
-        //TODO: Aplicar metodo de JORDAN (usar funcao sl_jordan)
-        //TODO: Exibir matriz diagonal (usar funcao print_matrix)
-        //TODO: Exibir solução do problema (usar funcao print_solution)
+
+        printf("\n\nMATRIZ DIAGONAL:\n");
+        sl_jordan(m, n);
+        print_matrix(m, n, n + 1);
+
+        result = sl_simple(m, n, x);
+        if (result == SL_RESULT_INCOMPATIBLE) {
+            printf("Sistema Linear INCOMPATIVEL!\n");
+        } else {
+            if (result == SL_RESULT_UNDEFINED) {
+                printf("Sistema Linear INDETERMINADO\n");
+            } else {
+                printf("Sistema Linear DETERMINADO\n");
+            }
+
+            print_solution(x, n);
+        }
 
         delete_matrix(m, n);
+        free(x);
     }
 }
 
