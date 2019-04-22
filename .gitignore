@@ -1,4 +1,5 @@
 .vscode/
 build/
-.DSYM/
+*.dSYM/
 .DS_Store
+ep1

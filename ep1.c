@@ -37,10 +37,10 @@ char get_num(int num)
 
 /**
  * Formatar Número para qualquer base
- * Entrada:
- * - num    => número em decimal a ser convertido
- * - base   => a base de destino
- * - output => um ponteiro para uma string de saída
+ * Entrada>>
+ * - num    : número em decimal a ser convertido
+ * - base   : a base de destino
+ * - output : um ponteiro para uma string de saída
  */
 void format_number(double num, int base, char *output)
 {
@@ -150,6 +150,10 @@ double *alloc_vector(int n)
 
 /**
  * Aplica método da substituição simples para resolver um sistema linear diagonal (triangular superior e inferior) 
+ * Entrada>>
+ * - m : Matriz (N x N+1)
+ * - n : Numero de variaveis
+ * - x : O vetor solução
  */
 int sl_simple(double **m, int n, double *x)
 {
@@ -168,41 +172,10 @@ int sl_simple(double **m, int n, double *x)
 }
 
 /**
- * Aplica o método de Gauss e escalona a matriz M dada em uma matriz Triangular Superior equivalente
- */
-void sl_gauss(double **m, int n)
-{
-    int i, j, k;
-    double mult, *aux;
-
-    for (i = 0; i < n - 1; i++) {
-        if (m[i][i] == 0) { //pivo nulo
-            j = i + 1;
-            while (j < n && m[j][i] == 0) { j++; }
-            if (j < n) { 
-                //trocando as linhas i e j
-                aux = m[i];
-                m[i] = m[j];
-                m[j] = aux;
-            }
-        }
-
-        if (m[i][i] != 0) {
-            for (j = i + 1; j < n; j++) {
-                mult = -m[j][i] / m[i][i];
-                m[j][i] = 0;
-                
-                //pivotando a linha j
-                for (k = i + 1; k <= n; k++) {
-                    m[j][k] += mult * m[i][k];
-                }
-            }
-        }
-    }
-}
-
-/**
  * Aplica o Método de Jordan para encontrar uma Matriz Diagonal (Triangular Superior e Inferior)
+ * Entrada>>
+ * - m : Matriz (N x N+1)
+ * - n : Numero de variaveis
  */
 void sl_jordan(double **m, int n)
 {
@@ -318,9 +291,15 @@ void convert_option()
 
 /**
  * Lê um arquivo dado, popula a matriz M de N variaveis
- * Retorno:
- *  0 - Não foi possível ler o arquivo
- *  1 - Sucesso!
+ * Entrada>>
+ * - Nome do Arquivo
+ * Saída>>
+ * - size : quantidade de variaveis
+ * - m    : A matriz
+ * Retorno>>
+ *  -1 : Arquivo não encontrado
+ *  -3 : Arquivo inválido
+ *  1  : Sucesso!
  */
 int read_matrix_file(char* file_name, int* size, double*** m)
 {
@@ -379,6 +358,11 @@ void linear_system_option()
     } else {
         x = alloc_vector(n);
 
+        if (x == NULL || m == NULL) {
+            printf("\n Sem memória.");
+            return;
+        }
+
         printf("\nN = %d\n", n);
         print_matrix(m, n, n + 1);
 
@@ -405,15 +389,120 @@ void linear_system_option()
 }
 
 /**
+ * Aplica teorema de lagrange
+ * Entrada>>
+ * - e : Equação [a, b, c, ..., z] <=> a*x^n + b*x^(n-1) * ... * z*x^0
+ * - n : Grau da equação
+ * Saída>>
+ * L = 1 + (B / An)^[1/(N-K)]
+ */
+double lagrange(double *e, int n)
+{
+    int i, k;
+    double an, b;
+
+    an = e[0];
+    b = 0;
+    k = 0;
+
+    if (an == 0)
+        return 0;
+
+    for (i = 0; i <= n; i++) {
+        if (e[i] < 0) {
+            if ((n - i) > k) {
+                k = (n - i);
+            }
+
+            if (e[i] < b) {
+                b = e[i];
+            }
+        }
+    }
+
+    b = fabs(b);
+
+    return 1 + pow(b / an, 1.0 / (n - k));
+}
+
+void equation_lagrange_option(double *e, int n)
+{
+    int i;
+    double *e1, *e2, *e3, l, l1, l2, l3;
+
+    e1 = alloc_vector(n + 1);
+    e2 = alloc_vector(n + 1);
+    e3 = alloc_vector(n + 1);
+
+    if (e1 == NULL || e2 == NULL || e3 == NULL) {
+        printf("\n Sem memória.");
+        return;
+    }
+
+    for (i = 0; i <= n; i++) {
+        e1[n - i] = e[i];
+        e2[i] = i % 2 == 0 ? e[i]: -e[i];
+        e3[n - i] = e2[i];
+    }
+
+    l  = lagrange(e, n);
+    l1 = 1.0 / lagrange(e1, n);
+    l2 = -lagrange(e2, n);
+    l3 = - 1.0 / lagrange(e3, n);
+
+    free(e1);
+    free(e2);
+    free(e3);
+
+    printf("\nIntervalo das raízes:");
+    printf("\n %lf < x+ < %lf", l1, l);
+    printf("\n %lf < x- < %lf", l2, l3);
+}
+
+/**
  * Ler equaçao algebrica e aplicar teoremas de lagrange, bolzano e bissessão
  */
 void equation_option()
 {
-    //TODO
+    int n, i, f;
+    double *e;
+
+    printf("\nInforme o grau da equação: ");
+    scanf("%d", &n);
+
+    e = alloc_vector(n + 1);
+
+    if (e == NULL) {
+        printf("\n Sem memória.");
+        return;
+    }
+
+    for (i = 0; i <= n; i++) {
+        do {
+            f = 1;
+            printf("\nCoeficiente de x^%d: ", n - i);
+            scanf("%lf", &e[i]);    
+            if (i == 0 && e[i] <= 0) {
+                printf("\nx^%d NÃO pode ser MENOR OU IGUAL ZERO.", n);
+                f = 0;
+            }
+
+            if (i == n && e[n] == 0) {
+                printf("\nTermo independente NÃO pode ser ZERO.");
+                f = 0;
+            }
+        } while (f == 0);
+    }
+
+    equation_lagrange_option(e, n);
+
+    free(e);
 }
 
 int main()
 {
+    setlocale(LC_ALL, "Portuguese");
+
     char opt;
     while (opt = read_menu_option(), opt != FINISH_OPT) {
         if (opt == CONVERT_OPT)
